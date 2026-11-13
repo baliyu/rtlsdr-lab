@@ -75,6 +75,25 @@ This makes the broad peaks, and every airband peak in this survey, look like har
 - The airband peaks were not tested at other gain settings, so tuner overload is not excluded there.
 - All 16 peaks are accounted for by the comb, so I found nothing I can attribute to an aircraft. The survey was 1 s per frequency with a 10 dB threshold, so weak or intermittent transmissions would be missed.
 
+## ACARS band look (13 Nov 2026)
+
+Question: is there ACARS traffic the dongle can see? ACARS is an aircraft VHF data link, vertically polarised. I took the channel list from web sources and have not confirmed any channel on air. 131.725 MHz is listed as the European primary and 131.525 MHz as the European secondary. Two national aeronautical circulars (Spain, `aip.enaire.es/AIP/contenido_AIC/I/LE_Circ_2023_I_10_en.pdf`, and Norway, `partner.avinor.no/siteassets/ais-portalen-forside/aic/en_circ_2024_a_015_en.pdf`) list 131.525, 131.725 and 131.825 MHz as the ACARS channels. Informal listings also give 131.550 MHz as a world primary and 131.850 MHz as a newer European channel, which the circulars do not mention. The polarisation comes from `sigidwiki.com/wiki/Aircraft_Communications_Addressing_and_Reporting_System_(ACARS)`.
+
+Capture 1: 60 s centred on 131.625 MHz at 0.3 MS/s, tuner gain 40 dB, antenna on, then a burst count in a 12 kHz window on each channel in 10 ms blocks (a burst is 10 dB or more above that channel's own median for at least 100 ms). 131.625 and 131.675 MHz are controls, because no listing I found gives them as ACARS channels:
+
+    /usr/bin/python3 capture.py 131.625e6 0.3e6 40 60 captures/acars_131625_60s.cfile
+    /usr/bin/python3 channel_bursts.py captures/acars_131625_60s.cfile 131.625e6 0.3e6 10 131.525 131.550 131.625 131.675 131.725
+
+Result: 0 bursts on all five channels. That is one minute at one antenna position, so it does not show that there is no traffic: a burst shorter than 100 ms or weaker than 10 dB would be missed. Every channel had one 10 ms block 7.3 to 8.4 dB above its median, and I did not check whether those coincide. The median at 131.725 MHz was 2.1 dB above the other four, which agree to 0.2 dB.
+
+Two 20 s spectra with a 3 dB peak threshold, one centred on 131.625 MHz and one on 131.575 MHz (`figures/acars_131625_20s_spectrum.png` and `figures/acars_131575_20s_spectrum.png`; the first is the first 20 s of capture 1):
+
+- A thin spike at 131.549 MHz (4.0 and 5.0 dB above the floor), at the same frequency in both, so it is not tied to the centre frequency. It is within 1 kHz of 131.550 MHz and it is not on the 0.95 MHz comb (131.549 divided by 0.95011 is 138.46). I do not know what it is. It is steady in a 20 s average, which does not look like ACARS bursts, but I have not measured how steady it is.
+- A broad rise of about 3 dB, peaking about 100 to 120 kHz above the centre in both captures (near 131.745 MHz, then near 131.68 MHz, read by eye). It moves with the centre, so I read it as the dongle's own response and not a signal. That would also explain the higher median at 131.725 MHz.
+- Horizontal streaks across the full width in both waterfalls, which fit wideband impulses. I have not tested that.
+
+Limits: this is energy detection only, and no ACARS message has been decoded. 131.825 MHz was outside both captures. The airband peaks from the survey were not gain-tested, and I have not tried a different antenna position.
+
 ## Prediction scorecard
 
 | Prediction | Result |
@@ -121,5 +140,14 @@ This makes the broad peaks, and every airband peak in this survey, look like har
 | The airband peaks fit a harmonic comb with spacing between 0.9495 and 0.9510 MHz and rms under 8 kHz | Hit (0.95011 MHz and 5.5 kHz, random sets gave 164 kHz or worse) |
 | That comb predicts the FM-band broad peaks of the later captures to within 15 kHz | Hit (+7 and -9 kHz) |
 | A spacing about 1 kHz lower explains the run 1 positions of those peaks | Hit (-1.15 and -1.12 kHz) |
+| ACARS channels are 131.525 and 131.725 MHz, both primary (70%) | Partly (both are European channels, but 131.725 is the primary and 131.525 the secondary) |
+| The 60 s capture at 0.3 MS/s is 144,000,000 bytes | Hit |
+| Both control channels show 0 bursts | Hit |
+| At least one burst on 131.525 or 131.725 in 60 s (40%) | Miss (0) |
+| At least one burst on 131.550 in 60 s (25%) | Miss (0) |
+| A peak within 5 kHz of 131.725 MHz in the 20 s spectrum | Miss (peaks at 131.549 and 131.744 MHz) |
+| The 20 s waterfall shows streaks across the full width | Hit |
+| The 131.549 MHz spike stays within 3 kHz and 2 dB after re-centring | Hit (131.549 MHz, 4.0 then 5.0 dB) |
+| The broad rise moves with the centre and peaks within 15 kHz of 131.700 MHz | Partly (it moved with the centre but peaked near 131.68 MHz, read by eye) |
 
-Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), ACARS. Airband: a first survey is done, see above.
+Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), decoding any ACARS message. Airband: a first survey and a first look at the ACARS band are done, see above.
