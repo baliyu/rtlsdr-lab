@@ -27,7 +27,7 @@ Plot spectrum and waterfall:
 
 `figures/fm_98M_run1_spectrum.png`: three broad peaks about 200 kHz wide, near 97.75, 98.69 and 98.91 MHz (read by eye from the figure). The top one has a shoulder near 98.86 MHz. A thin steady spike near 98.30 MHz, cause unknown. I have not identified any station. One `[R82XX] PLL not locked!` warning appeared during the capture, the stations were present anyway, and I have one capture only.
 
-Known flaw: the peak counter in `plot_spectrum.py` uses a 20 dB threshold and counted only 1 peak. By eye two other stations sit about 16 to 17 dB above the floor, so the printed count is wrong. To be fixed.
+Peak counter fixed: `plot_spectrum.py` now takes the threshold as an optional sixth argument (default 10 dB) and prints and plots the value used. At 10 dB it lists 4 peaks: 97.743, 98.300, 98.695 and 98.908 MHz (17.1, 16.5, 16.3 and 20.8 dB above the floor). Three are broad and look like stations. The 98.300 MHz one is the thin spike, which I count as a peak but not as a station. The 10 dB value was chosen after seeing the first figure, so it is not a tested threshold.
 
 ## Prediction scorecard
 
@@ -48,5 +48,7 @@ Known flaw: the peak counter in `plot_spectrum.py` uses a 20 dB threshold and co
 | At least 2 peaks 20 dB above floor | Miss (script threshold, see above) |
 | Strong spike at the centre frequency | Miss (about 3 dB) |
 | Flat noise only (25% chance) | Did not happen |
+| 4 peaks at a 10 dB threshold, at 97.75, 98.30, 98.69 and 98.91 MHz | Hit (17.1, 16.5, 16.3 and 20.8 dB above the floor) |
+| The 98.86 MHz shoulder is not listed as its own peak | Hit |
 
 Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), airband AM, ACARS.

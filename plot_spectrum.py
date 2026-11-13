@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Spectrum and waterfall of a raw IQ capture (complex float32).
 # AI-assisted: drafted with Claude, run and checked by the author.
-# Usage: plot_spectrum.py INFILE FREQ_HZ RATE_SPS GAIN_DB OUTPNG
+# Usage: plot_spectrum.py INFILE FREQ_HZ RATE_SPS GAIN_DB OUTPNG [THRESH_DB, default 10]
 import sys
 import numpy as np
 import matplotlib
@@ -11,6 +11,7 @@ from scipy import signal
 
 infile, out = sys.argv[1], sys.argv[5]
 fc, fs, gain = float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
+thr = float(sys.argv[6]) if len(sys.argv) > 6 else 10.0
 x = np.fromfile(infile, dtype=np.complex64)
 nfft = 4096
 f, p = signal.welch(x, fs=fs, nperseg=nfft, return_onesided=False, detrend=False)
@@ -19,16 +20,16 @@ p_db = 10 * np.log10(np.fft.fftshift(p) + 1e-20)
 floor = np.median(p_db)
 step = fs / nfft
 mask = np.abs(f - fc) > 10e3
-idx, _ = signal.find_peaks(np.where(mask, p_db, floor), height=floor + 20, distance=int(100e3 / step))
+idx, _ = signal.find_peaks(np.where(mask, p_db, floor), height=floor + thr, distance=int(100e3 / step))
 print("samples:", len(x), "seconds:", round(len(x) / fs, 2))
 print("median floor (dB):", round(floor, 1), "centre bin (dB):", round(p_db[nfft // 2], 1))
-print("peaks 20 dB or more above floor, excluding centre +/-10 kHz:", len(idx))
+print("peaks %.0f dB or more above floor, excluding centre +/-10 kHz:" % thr, len(idx))
 for i in idx:
     print("  %.3f MHz  %.1f dB above floor" % (f[i] / 1e6, p_db[i] - floor))
 
 fig, ax = plt.subplots(2, 1, figsize=(10, 8))
 ax[0].plot(f / 1e6, p_db, lw=0.6)
-ax[0].axhline(floor + 20, color="r", ls="--", lw=0.8, label="floor + 20 dB")
+ax[0].axhline(floor + thr, color="r", ls="--", lw=0.8, label="floor + %.0f dB" % thr)
 ax[0].set_xlabel("Frequency (MHz)")
 ax[0].set_ylabel("Power (dB, uncalibrated)")
 ax[0].legend()
