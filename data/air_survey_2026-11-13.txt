@@ -1,0 +1,19 @@
+# Airband survey, 13 Nov 2026. Antenna on, tuner gain 40 dB, 2.048 MS/s, 1 s per capture.
+# Peaks 10 dB or more above the median floor, from plot_spectrum.py (centre +/-10 kHz excluded).
+# Typed by hand from the terminal output of the 13-capture loop. Columns: capture centre MHz, peak MHz, dB above floor.
+123.0 122.559 10.5
+126.0 125.415 11.5
+126.0 126.361 11.3
+127.5 127.308 11.5
+127.5 128.258 12.0
+129.0 128.266 12.3
+129.0 129.214 13.6
+130.5 130.165 11.6
+130.5 131.115 11.4
+132.0 132.078 12.2
+133.5 133.021 15.8
+133.5 133.978 15.6
+135.0 134.917 15.7
+135.0 135.867 15.7
+136.5 135.863 15.7
+136.5 136.815 15.5

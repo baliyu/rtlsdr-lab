@@ -41,13 +41,39 @@ Established:
 
 Not explained:
 
-- The two broad peaks, about 200 kHz wide and about 0.95 MHz apart. In run 1 they sat near 97.74 and 98.70 MHz. In run 2, the gain 20 and gain 10 captures and the battery capture they sat at 97.86 to 97.88 and 98.80 to 98.82 MHz, with the same spacing. The 98.9 MHz station and the 98.30 MHz spike did not move. In the run 1 data their envelope is nearly constant (spread 0.19 and 0.23, against 0.55 for noise) and their frequency spread is about 26 kHz, but demodulating them gives no audible audio and no 19 kHz pilot. I do not know what they are, or why run 1 differs from the later captures. A capture on battery power, with the charger unplugged, did not change them, so the charger is not supported as the source.
+- The two broad peaks, about 200 kHz wide and about 0.95 MHz apart. In run 1 they sat near 97.74 and 98.70 MHz. In run 2, the gain 20 and gain 10 captures and the battery capture they sat at 97.86 to 97.88 and 98.80 to 98.82 MHz, with the same spacing. The 98.9 MHz station and the 98.30 MHz spike did not move. In the run 1 data their envelope is nearly constant (spread 0.19 and 0.23, against 0.55 for noise) and their frequency spread is about 26 kHz, but demodulating them gives no audible audio and no 19 kHz pilot. When I wrote this I did not know what they were. The airband survey below gives a probable explanation (a harmonic comb from one source), which is not a confirmed cause. A capture on battery power, with the charger unplugged, did not change them, so the charger is not supported as the source.
 
 The envelope, frequency-spread and WAV checks were one-off inline commands and are not saved in this repo, so those numbers cannot be reproduced from here. `demod_fm.py` is saved:
 
     /usr/bin/python3 demod_fm.py captures/fm_98M_run1.cfile 98e6 2.048e6 30 figures/fm_98M_run1_pilot.png 97.743e6 98.695e6 98.908e6
 
 Other figures: `figures/fm_98M_run2_spectrum.png`, `figures/fm_98M_g20_spectrum.png`, `figures/fm_98M_g10_spectrum.png`, `figures/fm_98M_battery_spectrum.png`.
+
+## Airband survey and a comb of lines (13 Nov 2026)
+
+Question: can the dongle hear anything in the airband (118 to 137 MHz)? I took 13 captures of 1 s each, centred every 1.5 MHz from 118.5 to 136.5 MHz, antenna on, tuner gain 40 dB, 2.048 MS/s, and ran `plot_spectrum.py` with the 10 dB threshold on each. The loop was run inline and is not saved as a script:
+
+    for c in 118.5 120.0 121.5 123.0 124.5 126.0 127.5 129.0 130.5 132.0 133.5 135.0 136.5; do
+      /usr/bin/python3 capture.py ${c}e6 2.048e6 40 1 captures/air_$c.cfile
+      /usr/bin/python3 plot_spectrum.py captures/air_$c.cfile ${c}e6 2.048e6 40 /tmp/air_$c.png 10
+    done
+
+Result: 16 peaks in total, none at 118.5, 120.0, 121.5 and 124.5 MHz. The peak frequencies are in `data/air_survey_2026-11-13.txt`, typed by hand from the terminal output.
+
+The peaks are not random. `comb_fit.py` fits integer harmonics of one spacing to them:
+
+    /usr/bin/python3 comb_fit.py data/air_survey_2026-11-13.txt
+
+- Best spacing 0.95011 MHz, residual 5.5 kHz rms. In 20 random sets of 16 frequencies over the same range, the best residual was 164 kHz or worse (median 204 kHz). The control used a coarser search step than the real fit.
+- The fit assigns harmonic numbers 129 to 144. It then predicts the two broad peaks in the FM band (harmonics 103 and 104) to within 7 and 9 kHz of where the later captures put them (averages of the run 2, gain 20 and battery captures for the first, run 2 and battery for the second).
+- The run 1 positions of those two peaks fit the same harmonics if the spacing was about 1.1 kHz lower (0.94896 and 0.94899 MHz). That would explain why both moved together by about 110 kHz between run 1 and run 2.
+
+This makes the broad peaks, and every airband peak in this survey, look like harmonics of one radiated source with a spacing near 0.95 MHz. They are consistent with the earlier results (constant envelope, no audio, gone with the antenna off). I have not identified the source. Limits:
+
+- The fit gives the spacing. The true fundamental could be a sub-multiple, such as half of it, with every second line weak.
+- The battery capture ruled out the laptop charger. I do not know what else nearby produces it.
+- The airband peaks were not tested at other gain settings, so tuner overload is not excluded there.
+- All 16 peaks are accounted for by the comb, so I found nothing I can attribute to an aircraft. The survey was 1 s per frequency with a 10 dB threshold, so weak or intermittent transmissions would be missed.
 
 ## Prediction scorecard
 
@@ -91,5 +117,9 @@ Other figures: `figures/fm_98M_run2_spectrum.png`, `figures/fm_98M_g20_spectrum.
 | Both broad peaks stay listed at gain 20 | Partly (97.879 listed at 13.0 dB, the other hump was not, because the script keeps one peak per 100 kHz) |
 | On battery power, 98.90 and 98.30 stay within 3 dB of run 2 | Partly (spike 2.2 dB lower, station 5.2 dB lower) |
 | On battery power, a broad peak moves 30 kHz or changes 5 dB | Miss (moved 14 and 1 kHz, changed 1.0 and 4.2 dB) |
+| Airband survey: 1 to 10 peaks in total (60%) | Miss (16) |
+| The airband peaks fit a harmonic comb with spacing between 0.9495 and 0.9510 MHz and rms under 8 kHz | Hit (0.95011 MHz and 5.5 kHz, random sets gave 164 kHz or worse) |
+| That comb predicts the FM-band broad peaks of the later captures to within 15 kHz | Hit (+7 and -9 kHz) |
+| A spacing about 1 kHz lower explains the run 1 positions of those peaks | Hit (-1.15 and -1.12 kHz) |
 
-Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), airband AM, ACARS.
+Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), ACARS. Airband: a first survey is done, see above.
