@@ -90,7 +90,7 @@ Question: is the comb still there a day later, and is the spacing the same? I ra
 - Fit over 0.94 to 0.96 MHz with all 27 peaks: spacing 0.94660 MHz, 29.4 kHz rms. One peak, 124.804 MHz, is 147.5 kHz from the nearest comb line. The next worst is 16.3 kHz.
 - Dropping that peak and refitting: 26 peaks, spacing 0.94664 MHz, 5.5 kHz rms (the same as 13 Nov). With the default 0.90 to 1.00 range and nothing dropped, the fit gives the same 0.94660 MHz and 29.4 kHz.
 - Random control with the same drop-the-worst rule: median 221 kHz, minimum 202 kHz.
-- The spacing moved from 0.95011 MHz (13 Nov) to 0.94664 MHz (14 Nov), 3.5 kHz lower. The monitor test above saw the spacing wander between about 0.940 and 0.952 MHz, so this is a change of the same kind. I did not find what sets it.
+- The spacing moved from 0.95011 MHz (13 Nov) to 0.94664 MHz (14 Nov), 3.5 kHz lower. The monitor test below saw the spacing wander between about 0.940 and 0.952 MHz, so this is a change of the same kind. I did not find what sets it.
 - Four lines are new at the bottom of the band (118.334, 119.28, 120.220 and 121.166 MHz). The 13 Nov captures at 118.5, 120.0 and 121.5 MHz listed none. I do not know why.
 
 ![Airband peaks against the fitted comb, 13 and 14 Nov](figures/comb_residuals.png)
