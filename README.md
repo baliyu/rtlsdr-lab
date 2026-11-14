@@ -153,6 +153,37 @@ The second row is overmodulation, which an envelope detector cannot follow, beca
 
 Limits: synthetic signal only, one noise level, one seed, one tone frequency and one carrier offset. This shows the envelope detector and the translating filter behave correctly on a signal I generated. It says nothing about real AM reception, about the dongle, or about how the demodulator copes with a real airband signal.
 
+## Airband AM look: Glasgow ATIS (14 Nov 2026)
+
+Question: can the dongle hear a continuous airband AM broadcast? I searched for the Glasgow Airport ATIS frequency. The sources disagree by 5 kHz: 129.580 MHz (`sprinkle.com/airport/EGPF`, `metarcentral.com/airport/EGPF/charts`) and 129.575 MHz (`world-airport-codes.com/united-kingdom/glasgow-international-2591.html`, `airspacesafety.com/fmc_atis_a5_09-2025`), and a fifth gives 129.57 (`skyvector.com/airport/EGPF/Glasgow-Airport`). I did not confirm which is right, or that it is on air. None of the frequencies I found is within 10 kHz of any of the 16 airband survey peaks, and two survey captures (centred on 129.0 and 130.5 MHz) covered 129.575 MHz and listed nothing there.
+
+Captures: 20 s at 0.3 MS/s, tuner gain 40 dB, antenna on. The centre was offset from the target so the dongle's own centre artifact would not hide a carrier: 129.625 MHz (`figures/air_atis_20s_spectrum.png`) and then 129.525 MHz (`figures/air_atis_b_20s_spectrum.png`), with a 3 dB peak threshold:
+
+    /usr/bin/python3 capture.py 129.625e6 0.3e6 40 20 captures/air_atis_20s.cfile
+    /usr/bin/python3 plot_spectrum.py captures/air_atis_20s.cfile 129.625e6 0.3e6 40 figures/air_atis_20s_spectrum.png 3
+
+Result: no carrier line at either spelling in either capture. Nothing was heard. This does not show the ATIS is not on air: a weak carrier under the noise and a short indoor aerial are both possible, and I did not demodulate or listen to anything.
+
+Two features appeared instead:
+
+- A thin spike at 129.600 MHz, at the same frequency in both captures (25 kHz below and 75 kHz above the centre), so it is not the dongle's centre artifact. With the aerial unscrewed it stayed (6.9 dB above its neighbours; the script does not print absolute levels), so it is internal to the dongle or its surroundings. I noticed afterwards that 129.600 MHz is nine times 14.4 MHz, half the 28.8 MHz the RTL2832U samples at (the V3 datasheet at `mouser.com/datasheet/2/813/RTL_SDR_Blog_V3_Datasheet-3305974.pdf`), which would fit a clock spur. I spotted that after seeing the number, so it is a lead and not a result.
+- A broad hump about 100 kHz wide near 129.57 to 129.59 MHz, about 8 dB above the span edges by eye in the first capture. It moved about 20 kHz (by eye) when the centre moved 100 kHz, so it is not simply tied to the centre. It was gone with the aerial off. That is too wide for an AM voice channel, and I do not know what it is.
+
+`hump_spike.py` measures both against the span edges and the local neighbours, for captures centred at 129.525 MHz only:
+
+    /usr/bin/python3 hump_spike.py captures/air_atis_b_20s.cfile 129.525e6 0.3e6
+
+| Capture | Hump above span edges | Spike above neighbours | Edge level |
+| --- | --- | --- | --- |
+| Second capture (aerial on) | 8.8 dB | 1.9 dB | -91.3 dB |
+| Aerial on, repeat | 7.3 dB | 2.0 dB | -90.6 dB |
+| Aerial off | 0.7 dB | 6.9 dB | -100.7 dB |
+| Aerial back on | 4.0 dB | 1.9 dB | -89.3 dB |
+
+The hump varied from 4.0 to 8.8 dB across the three aerial-on captures, so one capture of it is not a stable number. With the aerial off the floor fell by about 10 dB. The last three captures were about a minute apart with the aerial unscrewed and screwed back on, and I did not hold its position fixed.
+
+Limits: four captures, one place, one aerial. The frequency sources disagree by 5 kHz. Everything about the hump is by eye except the table.
+
 ## Prediction scorecard
 
 | Prediction | Result |
@@ -219,5 +250,18 @@ Limits: synthetic signal only, one noise level, one seed, one tone frequency and
 | Synthetic AM at depth 0.5: recovered depth within 0.01, tone within 2 Hz of 1000, second harmonic at least 50 dB down, 89,000 to 90,000 samples (90%, 95%, 85%, 90%) | Hit on all four (0.502, 999.8 Hz, 81.6 dB, 89,500) |
 | Overmodulated AM at depth 1.2: recovered depth within 0.05 of 1.05 (60%) | Hit (1.053) |
 | Overmodulated AM at depth 1.2: second harmonic 18 to 26 dB below the tone (60%) | Hit (21.9 dB) |
+| Searching finds a continuous airband broadcast frequency for the Glasgow area (75%) | Hit (the ATIS, 129.575 or 129.580 MHz depending on the source) |
+| None of the frequencies found is within 10 kHz of a survey peak (80%) | Hit |
+| A carrier is listed within 5 kHz of 129.575 MHz in the first ATIS capture (25%) | Miss (only a spike at 129.600 MHz) |
+| The first ATIS capture shows a smooth floor with a ripple of a few dB (75%) | Miss (a hump of about 8 dB by eye) |
+| In the second ATIS capture the spike is listed within 3 kHz of 129.600 MHz (55%) | Hit (9.0 dB above the floor) |
+| The hump stays within 15 kHz of 129.570 MHz after re-centring (50%) | Miss (it moved about 20 kHz, by eye) |
+| No thin carrier line near 129.575 or 129.580 MHz (75%) | Hit |
+| In the existing capture the hump is 6 to 10 dB and the spike 1 to 4 dB above their surroundings (80%) | Hit (8.8 and 1.9 dB) |
+| A repeat with the aerial on is within 2 dB on both (70%) | Hit (7.3 and 2.0 dB) |
+| With the aerial off the hump falls below 2 dB (65%) | Hit (0.7 dB) |
+| With the aerial off the spike stays 5 dB or more above its neighbours, so it is internal (45%) | Hit (6.9 dB) |
+| With the aerial off the spike falls below 1 dB, so it is external (40%) | Miss |
+| With the aerial back on, hump and spike are within 3 dB of the first repeat (70%) | Miss (hump 4.0 against 7.3 dB, spike matched) |
 
-Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far), and any GNU Radio flowgraph fed live from the dongle. Airband: a first survey and a first look at the ACARS band are done, see above.
+Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far, and nothing was heard at the published Glasgow ATIS frequency, see above), and any GNU Radio flowgraph fed live from the dongle. Airband: a first survey and a first look at the ACARS band are done, see above.
