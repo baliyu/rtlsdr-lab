@@ -59,7 +59,7 @@ Other figures: `figures/fm_98M_run2_spectrum.png`, `figures/fm_98M_g20_spectrum.
 
 ## Airband survey and a comb of lines (13 Nov 2026)
 
-Question: can the dongle hear anything in the airband (118 to 137 MHz)? I took 13 captures of 1 s each, centred every 1.5 MHz from 118.5 to 136.5 MHz, antenna on, tuner gain 40 dB, 2.048 MS/s, and ran `plot_spectrum.py` with the 10 dB threshold on each. The loop was run inline and is not saved as a script:
+Question: can the dongle hear anything in the airband (118 to 137 MHz)? I took 13 captures of 1 s each, centred every 1.5 MHz from 118.5 to 136.5 MHz, antenna on, tuner gain 40 dB, 2.048 MS/s, and ran `plot_spectrum.py` with the 10 dB threshold on each. The 13 Nov run used this loop typed inline. It is now saved as `survey_air.sh` (first run from the script on 14 Nov, below):
 
     for c in 118.5 120.0 121.5 123.0 124.5 126.0 127.5 129.0 130.5 132.0 133.5 135.0 136.5; do
       /usr/bin/python3 capture.py ${c}e6 2.048e6 40 1 captures/air_$c.cfile
@@ -82,6 +82,33 @@ This makes the broad peaks, and every airband peak in this survey, look like har
 - The battery capture ruled out the laptop charger. I do not know what else nearby produces it.
 - The airband peaks were not tested at other gain settings, so tuner overload is not excluded there.
 - All 16 peaks are accounted for by the comb, so I found nothing I can attribute to an aircraft. The survey was 1 s per frequency with a 10 dB threshold, so weak or intermittent transmissions would be missed.
+
+## Airband survey repeated, and the comb again (14 Nov 2026)
+
+Question: is the comb still there a day later, and is the spacing the same? I ran the same survey from the saved script `survey_air.sh` (gain 40 dB, 10 dB threshold, antenna on). It listed 27 peaks, copied by hand from the terminal output into `data/air_survey_2026-11-14.txt`.
+
+- Fit over 0.94 to 0.96 MHz with all 27 peaks: spacing 0.94660 MHz, 29.4 kHz rms. One peak, 124.804 MHz, is 147.5 kHz from the nearest comb line. The next worst is 16.3 kHz.
+- Dropping that peak and refitting: 26 peaks, spacing 0.94664 MHz, 5.5 kHz rms (the same as 13 Nov). With the default 0.90 to 1.00 range and nothing dropped, the fit gives the same 0.94660 MHz and 29.4 kHz.
+- Random control with the same drop-the-worst rule: median 221 kHz, minimum 202 kHz.
+- The spacing moved from 0.95011 MHz (13 Nov) to 0.94664 MHz (14 Nov), 3.5 kHz lower. The monitor test above saw the spacing wander between about 0.940 and 0.952 MHz, so this is a change of the same kind. I did not find what sets it.
+- Four lines are new at the bottom of the band (118.334, 119.28, 120.220 and 121.166 MHz). The 13 Nov captures at 118.5, 120.0 and 121.5 MHz listed none. I do not know why.
+
+![Airband peaks against the fitted comb, 13 and 14 Nov](figures/comb_residuals.png)
+
+`comb_plot.py` makes the figure. Against the refit spacing the dropped peak is 153.0 kHz off (147.5 kHz against the first fit), about 13 times the largest distance of any kept peak.
+
+Is the 124.804 MHz peak steady? I took three more 1 s captures at 124.5 MHz, gain 40. The comb line at 124.962 MHz was listed in all three. The 124.804 MHz peak was listed in two (12.6 and 12.0 dB), at the same frequency both times, and not in the third. It may have been under the 10 dB threshold there; I did not check. So it repeats and sits off the comb. I did not identify it. My predictions for this test: 124.962 MHz in all three (held), 124.804 MHz in at most one of three (missed), in all three (missed).
+
+Limits:
+
+- I dropped the outlier after seeing it. The random control used the same rule, so it still separates a real comb from a random one, but 5.5 kHz means "after dropping the worst of 27".
+- The control used a coarser step than the real fit.
+- Two surveys on two days, one antenna, one location. The source of the comb is still unidentified.
+
+Reproduce:
+
+    /usr/bin/python3 comb_fit.py data/air_survey_2026-11-14.txt --drop-worst --range 0.94 0.96
+    /usr/bin/python3 comb_plot.py figures/comb_residuals.png
 
 ## ACARS band look (13 Nov 2026)
 
@@ -268,5 +295,12 @@ Limits: four captures, one place, one aerial. The frequency sources disagree by 
 | With the aerial off the spike falls below 1 dB, so it is external (40%) | Miss |
 | With the aerial back on, hump and spike are within 3 dB of the first repeat (70%) | Miss (hump 4.0 against 7.3 dB, spike matched) |
 | The saved `fm_wav.py` reproduces the earlier three WAV files: RMS within 0.0002 of 0.0923, 0.0931 and 0.1584 (85%), byte for byte (80%) | Hit on both |
+| `comb_fit.py` with the new switches gives byte-identical output on the 13 Nov data (90%) | Hit |
+| 14 Nov refit with the worst peak dropped, range 0.94 to 0.96: 26 peaks, 0.94664 MHz, 5.5 kHz rms, dropping 124.804 MHz (80%) | Hit |
+| 14 Nov fit with the default range and nothing dropped gives the same 0.94660 MHz and 29.4 kHz (60%) | Hit |
+| The dropped peak's residual is within 5 kHz of -147.5 kHz | Miss (-153.0 kHz, because it was measured against the refit spacing, 0.94664 instead of 0.94660 MHz, which at harmonic 132 moves it by about 5 kHz) |
+| The comb line at 124.962 MHz is listed in all three repeat captures at 124.5 MHz (70%) | Hit (16.9, 16.5 and 13.2 dB) |
+| The 124.804 MHz peak is listed in at most one of the three repeats (60%) | Miss (listed in two, at 12.6 and 12.0 dB) |
+| The 124.804 MHz peak is listed in all three repeats (25%) | Miss (two of three) |
 
-Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far, and nothing was heard at the published Glasgow ATIS frequency, see above), and any GNU Radio flowgraph fed live from the dongle. Airband: a first survey and a first look at the ACARS band are done, see above.
+Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far, and nothing was heard at the published Glasgow ATIS frequency, see above), and any GNU Radio flowgraph fed live from the dongle. Airband: two surveys (13 and 14 Nov) and a first look at the ACARS band are done, see above.
