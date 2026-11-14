@@ -47,7 +47,11 @@ The envelope and frequency-spread numbers come from `fm_checks.py`, which reprod
 
     /usr/bin/python3 fm_checks.py captures/fm_98M_run1.cfile 98e6 2.048e6 97.400e6 97.743e6 98.695e6 98.908e6
 
-The WAV listening check was an inline command and is not saved, so the audible result cannot be reproduced from this repo. `demod_fm.py` is saved:
+The WAV files for the listening check come from `fm_wav.py`, which regenerates them byte for byte (3 s of mono audio per station, one shared volume scale):
+
+    /usr/bin/python3 fm_wav.py captures/fm_98M_run1.cfile 98e6 2.048e6 captures/wavcheck 97.743e6 98.695e6 98.908e6
+
+What is still not saved is the listening itself: I did not record which file had the music, and I assumed it was 98.908 MHz. `demod_fm.py` is saved:
 
     /usr/bin/python3 demod_fm.py captures/fm_98M_run1.cfile 98e6 2.048e6 30 figures/fm_98M_run1_pilot.png 97.743e6 98.695e6 98.908e6
 
@@ -263,5 +267,6 @@ Limits: four captures, one place, one aerial. The frequency sources disagree by 
 | With the aerial off the spike stays 5 dB or more above its neighbours, so it is internal (45%) | Hit (6.9 dB) |
 | With the aerial off the spike falls below 1 dB, so it is external (40%) | Miss |
 | With the aerial back on, hump and spike are within 3 dB of the first repeat (70%) | Miss (hump 4.0 against 7.3 dB, spike matched) |
+| The saved `fm_wav.py` reproduces the earlier three WAV files: RMS within 0.0002 of 0.0923, 0.0931 and 0.1584 (85%), byte for byte (80%) | Hit on both |
 
 Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far, and nothing was heard at the published Glasgow ATIS frequency, see above), and any GNU Radio flowgraph fed live from the dongle. Airband: a first survey and a first look at the ACARS band are done, see above.
