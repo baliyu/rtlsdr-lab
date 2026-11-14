@@ -133,7 +133,25 @@ So far GNU Radio had only been used as a library (the Soapy source block in `cap
 
 Result: 767,800 output samples (768,000 from 6,144,000 divided by 8, minus the 200 trimmed) and a 19 kHz pilot 29.0 dB above the nearby floor at 98.908 MHz, the same as the numpy path in `demod_fm.py` (29.0 dB). It ran in 2.1 s.
 
-Limits: this shows the flowgraph tunes the right station and demodulates it. It is a weak check of the channel filter, because the pilot at 19 kHz sits far inside the passband and barely depends on the filter edge. I compared one station in one capture, did not compare the two demodulated signals sample by sample, and did not listen to the output. There is no AM flowgraph yet and nothing from the dongle through GNU Radio beyond the Soapy source block.
+Limits: this shows the flowgraph tunes the right station and demodulates it. It is a weak check of the channel filter, because the pilot at 19 kHz sits far inside the passband and barely depends on the filter edge. I compared one station in one capture, did not compare the two demodulated signals sample by sample, and did not listen to the output. The AM flowgraph below is tested on a synthetic file only, and nothing from the dongle goes through a flowgraph beyond the Soapy source block.
+
+## GNU Radio flowgraph, AM, synthetic test (14 Nov 2026)
+
+There is no off-air AM capture yet, so `gr_am.py` checks the demodulator on a signal it generates itself: 3 s at 0.3 MS/s, a carrier at +20 kHz with a 1 kHz tone at a chosen modulation depth, plus complex Gaussian noise (rms 0.005 against a mean carrier amplitude of 0.5, fixed seed). The flowgraph is a file source, a frequency-translating low-pass filter (5 kHz cutoff, 2 kHz transition, decimation 10), a magnitude block (the envelope detector) and a file sink. The script then measures the recovered depth (tone amplitude divided by the mean of the output), the tone frequency and the second harmonic:
+
+    /usr/bin/python3 gr_am.py 0.5 1000 20000
+    /usr/bin/python3 gr_am.py 1.2 1000 20000
+
+Results:
+
+| Input depth | Recovered depth | Tone peak | Second harmonic | Samples |
+| --- | --- | --- | --- | --- |
+| 0.50 | 0.502 | 999.8 Hz | 81.6 dB below the tone | 89,500 |
+| 1.20 | 1.053 | 999.8 Hz | 21.9 dB below the tone | 89,500 |
+
+The second row is overmodulation, which an envelope detector cannot follow, because the envelope goes negative and the detector returns its absolute value. I included it as a check that the test can fail, and it did: the distortion shows up as a much larger second harmonic. I worked out beforehand that this case should give a depth near 1.05 and a second harmonic about 22 dB down, and both held.
+
+Limits: synthetic signal only, one noise level, one seed, one tone frequency and one carrier offset. This shows the envelope detector and the translating filter behave correctly on a signal I generated. It says nothing about real AM reception, about the dongle, or about how the demodulator copes with a real airband signal.
 
 ## Prediction scorecard
 
@@ -198,5 +216,8 @@ Limits: this shows the flowgraph tunes the right station and demodulates it. It 
 | The GNU Radio FM flowgraph gives 767,000 to 768,000 output samples (90%) | Hit (767,800) |
 | Its 19 kHz pilot at 98.908 MHz is within 2 dB of the numpy path's 29.0 dB (80%) | Hit (29.0 dB) |
 | The flowgraph runs in under 20 s (85%) | Hit (2.1 s) |
+| Synthetic AM at depth 0.5: recovered depth within 0.01, tone within 2 Hz of 1000, second harmonic at least 50 dB down, 89,000 to 90,000 samples (90%, 95%, 85%, 90%) | Hit on all four (0.502, 999.8 Hz, 81.6 dB, 89,500) |
+| Overmodulated AM at depth 1.2: recovered depth within 0.05 of 1.05 (60%) | Hit (1.053) |
+| Overmodulated AM at depth 1.2: second harmonic 18 to 26 dB below the tone (60%) | Hit (21.9 dB) |
 
-Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation, and any GNU Radio flowgraph beyond the FM one above. Airband: a first survey and a first look at the ACARS band are done, see above.
+Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation of a real off-air signal (only a synthetic test so far), and any GNU Radio flowgraph fed live from the dongle. Airband: a first survey and a first look at the ACARS band are done, see above.
