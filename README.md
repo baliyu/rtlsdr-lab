@@ -6,7 +6,7 @@ AI-assisted: scripts and this README were drafted with Claude. I ran every comma
 
 ## Setup used
 
-- Dongle: Realtek RTL2832U, tuner Rafael Micro R820T (found by `SoapySDRUtil --find`). Probe range 24 to 1764 MHz, sample rates up to 3.2 MS/s.
+- Dongle: Realtek RTL2832U, tuner Rafael Micro R820T (found by `SoapySDRUtil --find`). Probe range 24 to 1764 MHz, sample rates up to 3.2 MS/s. The case label reads RTL-SDR.COM V.3, RTL2832U R860T TCXO+BIAS T+HF, while the driver reports an R820T, and I cannot tell whether this unit is a genuine V3. It is a stick plugged straight into the laptop's USB port, with a short white stub aerial on a right-angle SMA adapter, upright, about 10 cm by eye.
 - Windows 11 with WSL2 (Ubuntu), GNU Radio 3.10.12, SoapySDR RTL-SDR module. No `gr-osmosdr`, the Soapy source block is used instead.
 - The dongle is passed into WSL with usbipd-win 5.3.0. Admin PowerShell, once: `usbipd bind --busid 1-1`. Normal PowerShell, each time: `usbipd attach --wsl --busid 1-1`. Check the bus ID with `usbipd list` first, other devices on the machine must stay unbound.
 - Scripts run with `/usr/bin/python3` (the system one GNU Radio uses), not a venv.
@@ -125,6 +125,16 @@ This weakens two earlier statements. The comb fit in the airband survey describe
 
 Limits: three captures and one off period. Hump frequencies come from the script's peak list. The spike heights in B and C and the frequencies in the earlier capture are read by eye.
 
+## GNU Radio flowgraph, FM (14 Nov 2026)
+
+So far GNU Radio had only been used as a library (the Soapy source block in `capture.py`) and all analysis was numpy and scipy. `gr_fm.py` is the first flowgraph: file source, frequency-translating decimating FIR filter (100 kHz cutoff, 247 taps from GNU Radio's own filter design, decimation 8), quadrature demodulator, file sink. It reads a saved capture, so it needs no dongle:
+
+    /usr/bin/python3 gr_fm.py captures/fm_98M_run1.cfile 98e6 2.048e6 98.908e6 captures/gr_fm_98908.f32
+
+Result: 767,800 output samples (768,000 from 6,144,000 divided by 8, minus the 200 trimmed) and a 19 kHz pilot 29.0 dB above the nearby floor at 98.908 MHz, the same as the numpy path in `demod_fm.py` (29.0 dB). It ran in 2.1 s.
+
+Limits: this shows the flowgraph tunes the right station and demodulates it. It is a weak check of the channel filter, because the pilot at 19 kHz sits far inside the passband and barely depends on the filter edge. I compared one station in one capture, did not compare the two demodulated signals sample by sample, and did not listen to the output. There is no AM flowgraph yet and nothing from the dongle through GNU Radio beyond the Soapy source block.
+
 ## Prediction scorecard
 
 | Prediction | Result |
@@ -185,5 +195,8 @@ Limits: three captures and one off period. Hump frequencies come from the script
 | In the monitor test, A and C agree within 4 dB on both hump gaps to the station | Hit (1.9 and 1.5 dB) |
 | With the monitor off, both humps stay within 4 dB of their gap to the station in A (60%) | Hit (1.1 and 1.0 dB) |
 | With the monitor off, both humps fall at least 8 dB relative to the station (30%) | Miss |
+| The GNU Radio FM flowgraph gives 767,000 to 768,000 output samples (90%) | Hit (767,800) |
+| Its 19 kHz pilot at 98.908 MHz is within 2 dB of the numpy path's 29.0 dB (80%) | Hit (29.0 dB) |
+| The flowgraph runs in under 20 s (85%) | Hit (2.1 s) |
 
-Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), decoding any ACARS message. Airband: a first survey and a first look at the ACARS band are done, see above.
+Not yet tested: medium wave (the maker's page at `rtl-sdr.com/rtl-sdr-direct-sampling-mode/` says the V3 has direct sampling built in, so no hardware modification should be needed, but I have not tried it, I cannot tell whether this unit is genuine, and it needs a long aerial, which the stub on the dongle is not), decoding any ACARS message, AM demodulation, and any GNU Radio flowgraph beyond the FM one above. Airband: a first survey and a first look at the ACARS band are done, see above.
