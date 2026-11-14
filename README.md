@@ -43,7 +43,11 @@ Not explained:
 
 - The two broad peaks, about 200 kHz wide and about 0.95 MHz apart. In run 1 they sat near 97.74 and 98.70 MHz. In run 2, the gain 20 and gain 10 captures and the battery capture they sat at 97.86 to 97.88 and 98.80 to 98.82 MHz, with the same spacing. The 98.9 MHz station and the 98.30 MHz spike did not move. In the run 1 data their envelope is nearly constant (spread 0.19 and 0.23, against 0.55 for noise) and their frequency spread is about 26 kHz, but demodulating them gives no audible audio and no 19 kHz pilot. When I wrote this I did not know what they were. The airband survey below gives a probable explanation (a harmonic comb from one source), which is not a confirmed cause. A capture on battery power, with the charger unplugged, did not change them, so the charger is not supported as the source.
 
-The envelope, frequency-spread and WAV checks were one-off inline commands and are not saved in this repo, so those numbers cannot be reproduced from here. `demod_fm.py` is saved:
+The envelope and frequency-spread numbers come from `fm_checks.py`, which reproduces them exactly:
+
+    /usr/bin/python3 fm_checks.py captures/fm_98M_run1.cfile 98e6 2.048e6 97.400e6 97.743e6 98.695e6 98.908e6
+
+The WAV listening check was an inline command and is not saved, so the audible result cannot be reproduced from this repo. `demod_fm.py` is saved:
 
     /usr/bin/python3 demod_fm.py captures/fm_98M_run1.cfile 98e6 2.048e6 30 figures/fm_98M_run1_pilot.png 97.743e6 98.695e6 98.908e6
 
@@ -149,5 +153,6 @@ Limits: this is energy detection only, and no ACARS message has been decoded. 13
 | The 20 s waterfall shows streaks across the full width | Hit |
 | The 131.549 MHz spike stays within 3 kHz and 2 dB after re-centring | Hit (131.549 MHz, 4.0 then 5.0 dB) |
 | The broad rise moves with the centre and peaks within 15 kHz of 131.700 MHz | Partly (it moved with the centre but peaked near 131.68 MHz, read by eye) |
+| The saved `fm_checks.py` reproduces the earlier inline envelope and frequency-spread numbers (85%) | Hit (all four rows identical) |
 
 Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), decoding any ACARS message. Airband: a first survey and a first look at the ACARS band are done, see above.
