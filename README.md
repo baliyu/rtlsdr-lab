@@ -92,11 +92,38 @@ Result: 0 bursts on all five channels. That is one minute at one antenna positio
 
 Two 20 s spectra with a 3 dB peak threshold, one centred on 131.625 MHz and one on 131.575 MHz (`figures/acars_131625_20s_spectrum.png` and `figures/acars_131575_20s_spectrum.png`; the first is the first 20 s of capture 1):
 
-- A thin spike at 131.549 MHz (4.0 and 5.0 dB above the floor), at the same frequency in both, so it is not tied to the centre frequency. It is within 1 kHz of 131.550 MHz and it is not on the 0.95 MHz comb (131.549 divided by 0.95011 is 138.46). I do not know what it is. It is steady in a 20 s average, which does not look like ACARS bursts, but I have not measured how steady it is.
+- A thin spike at 131.549 MHz (4.0 and 5.0 dB above the floor), at the same frequency in both, so it is not tied to the centre frequency. It is within 1 kHz of 131.550 MHz. It is not on the comb at the spacing fitted in the airband survey (131.549 divided by 0.95011 is 138.46), but the comb spacing varies (see the monitor test section), so that check is weaker than it looked. The spike stayed within 1 kHz in two captures at different times while the comb lines moved by tens of kHz within minutes, so I still do not think it is a comb line. I do not know what it is. It is steady in a 20 s average, which does not look like ACARS bursts, but I have not measured how steady it is.
 - A broad rise of about 3 dB, peaking about 100 to 120 kHz above the centre in both captures (near 131.745 MHz, then near 131.68 MHz, read by eye). It moves with the centre, so I read it as the dongle's own response and not a signal. That would also explain the higher median at 131.725 MHz.
 - Horizontal streaks across the full width in both waterfalls, which fit wideband impulses. I have not tested that.
 
 Limits: this is energy detection only, and no ACARS message has been decoded. 131.825 MHz was outside both captures. The airband peaks from the survey were not gain-tested, and I have not tried a different antenna position.
+
+## Monitor on and off test (14 Nov 2026)
+
+Question: is the external monitor the source of the broad peaks? The dongle is a stick in the laptop's USB port and cannot be moved, so I switched the monitor off and on instead. Three 3 s captures at 98 MHz, 2.048 MS/s, tuner gain 30 dB, with the 5 dB peak threshold, roughly a minute apart (my estimate from the 45 s waits): A with the monitor on, B with it switched off, C with it switched on again. I do not know whether the monitor was fully off (not in standby) for B. Each capture was:
+
+    /usr/bin/python3 capture.py 98e6 2.048e6 30 3 captures/fm_98M_mon_A.cfile
+    /usr/bin/python3 plot_spectrum.py captures/fm_98M_mon_A.cfile 98e6 2.048e6 30 figures/fm_98M_mon_A_spectrum.png 5
+
+Peaks listed by the script, in dB above the floor:
+
+| Capture | Hump 1 | Hump 2 | 98.90 MHz station | 98.30 MHz spike |
+| --- | --- | --- | --- | --- |
+| A, monitor on | 97.166 MHz, 14.7 | 98.109 MHz, 15.0 | 98.906 MHz, 15.1 | 98.303 MHz, 16.6 |
+| B, monitor off | 97.186 MHz, 15.4 | 98.126 MHz, 15.6 | 98.903 MHz, 14.7 | not listed (about 4 dB by eye) |
+| C, monitor on again | 97.207 MHz, 16.1 | 98.151 MHz, 16.0 | 98.904 MHz, 14.6 | not listed (about 4 dB by eye) |
+
+Figures: `figures/fm_98M_mon_A_spectrum.png`, `figures/fm_98M_mon_B_spectrum.png`, `figures/fm_98M_mon_C_spectrum.png`.
+
+- The humps did not change when the monitor went off. Their height relative to the station changed by about 1 dB from A to B and did not reverse when the monitor came back on. So the monitor is not supported as the source of the humps. It is not ruled out either, because I do not know it was fully off.
+- The 98.30 MHz spike fell from 16.6 dB to about 4 dB in B and stayed down in C, so it did not follow the monitor. I do not know why. It had been present at 13 to 17 dB in every earlier capture at gain 30 with the antenna on.
+- Both humps moved up in frequency by about 20 kHz per capture (97.166, 97.186, 97.207 and 98.109, 98.126, 98.151 MHz). The gap between them was 0.943, 0.940 and 0.944 MHz. An earlier capture, taken before the monitor test with nothing switched off and with the time not recorded (`figures/fm_98M_all_on_spectrum.png`), has them at about 97.00 and 97.94 MHz, 0.94 MHz apart (read by eye). Run 1 and run 2 had 0.952 and 0.946 MHz.
+
+So the line spacing has ranged from about 0.940 to 0.952 MHz and the lines move by tens of kHz within minutes. A fixed crystal would not do that. I have not tested what does. A source whose frequency depends on load or temperature, such as a switching power converter, would fit, but that is a guess.
+
+This weakens two earlier statements. The comb fit in the airband survey describes one moment. Near 131 MHz, a spacing change of 0.012 MHz moves a line by about 1.7 MHz (140 times 0.012), more than the spacing itself, so the claim that the ACARS channels sit between the lines held at survey time only. The check that the 131.549 MHz spike is not on the comb has the same limit.
+
+Limits: three captures and one off period. Hump frequencies come from the script's peak list. The spike heights in B and C and the frequencies in the earlier capture are read by eye.
 
 ## Prediction scorecard
 
@@ -154,5 +181,9 @@ Limits: this is energy detection only, and no ACARS message has been decoded. 13
 | The 131.549 MHz spike stays within 3 kHz and 2 dB after re-centring | Hit (131.549 MHz, 4.0 then 5.0 dB) |
 | The broad rise moves with the centre and peaks within 15 kHz of 131.700 MHz | Partly (it moved with the centre but peaked near 131.68 MHz, read by eye) |
 | The saved `fm_checks.py` reproduces the earlier inline envelope and frequency-spread numbers (85%) | Hit (all four rows identical) |
+| All three monitor captures print 6144000 samples | Hit |
+| In the monitor test, A and C agree within 4 dB on both hump gaps to the station | Hit (1.9 and 1.5 dB) |
+| With the monitor off, both humps stay within 4 dB of their gap to the station in A (60%) | Hit (1.1 and 1.0 dB) |
+| With the monitor off, both humps fall at least 8 dB relative to the station (30%) | Miss |
 
 Not yet tested: medium wave (needs direct sampling, which I expect to need a hardware modification), decoding any ACARS message. Airband: a first survey and a first look at the ACARS band are done, see above.
